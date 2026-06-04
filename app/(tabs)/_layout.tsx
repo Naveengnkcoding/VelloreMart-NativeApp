@@ -1,59 +1,74 @@
-import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
-
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
-
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+import { useCart } from '../../context/CartContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { t } = useLanguage();
+  const { totalItems } = useCart();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
+        tabBarActiveTintColor: '#059669',
+        tabBarInactiveTintColor: '#666',
+        tabBarStyle: { height: 64, paddingBottom: 8, paddingTop: 6 },
+        headerShown: false,
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <FontAwesome
-                    name="info-circle"
-                    size={25}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
+          title: t.home,
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="cart"
+        options={{
+          title: t.cart,
+          tabBarIcon: ({ color, size }) => (
+            <View style={{ width: 28, height: 28 }}>
+              <Ionicons name="cart" size={size} color={color} />
+              {totalItems > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{totalItems}</Text>
+                </View>
+              )}
+            </View>
           ),
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="news"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: t.news,
+          tabBarIcon: ({ color, size }) => <Ionicons name="newspaper" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: t.profile,
+          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  badge: {
+    position: 'absolute',
+    right: -6,
+    top: -4,
+    backgroundColor: '#2563eb',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+});
