@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function LoginModal({ visible, onClose, onSwitchRegister }: any) {
+  const router = useRouter();
   const { t } = useLanguage();
   const { signIn, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
@@ -56,6 +58,18 @@ export default function LoginModal({ visible, onClose, onSwitchRegister }: any) 
 
           <Text style={styles.footer}>
             {t.noAccount} <Text onPress={onSwitchRegister} style={styles.link}>{t.registerNow}</Text>
+          </Text>
+
+          <Text style={styles.footerCenter}>
+            <Text
+              onPress={() => {
+                onClose();
+                router.push('/forgot-password');
+              }}
+              style={styles.forgotLink}
+            >
+              {t.forgotPassword}
+            </Text>
           </Text>
         </View>
       </View>
@@ -109,5 +123,7 @@ const styles = StyleSheet.create({
   },
   btnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   footer: { textAlign: 'center', color: '#6b7280', fontSize: 14, marginTop: 8 },
+  footerCenter: { textAlign: 'center', marginTop: 8 },
   link: { color: '#059669', fontWeight: '700' },
+  forgotLink: { color: '#059669', fontWeight: '700' },
 });

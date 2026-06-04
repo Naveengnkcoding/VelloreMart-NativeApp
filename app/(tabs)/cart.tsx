@@ -43,11 +43,11 @@ export default function CartScreen() {
               <Text style={styles.name}>
                 {lang === 'ta' ? item.product.name_ta : item.product.name_en}
               </Text>
-              <Text style={styles.meta}>1 x {item.product.weight}</Text>
+              <Text style={styles.meta}>{item.quantity} x {item.product.weight}</Text>
               <Text style={styles.price}>₹{item.product.price.toFixed(2)}</Text>
             </View>
             <TouchableOpacity onPress={() => removeItem(item.product.id)} style={styles.trash}>
-              <Ionicons name="trash-outline" size={20} color="#ef4444" />
+              <Ionicons name="trash" size={20} color="#b91c1c" />
             </TouchableOpacity>
 
             <View style={styles.qtyRow}>
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 28  ,
+    paddingTop: 50,
     paddingHorizontal: 16,
     paddingBottom: 12,
     backgroundColor: '#f3f4f6',
@@ -120,6 +120,7 @@ const styles = StyleSheet.create({
   list: { flex: 1, paddingHorizontal: 16 },
   card: {
     backgroundColor: '#fff',
+    height: 100,
     borderRadius: 16,
     padding: 12,
     marginBottom: 12,
@@ -130,13 +131,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
+    position: 'relative',
   },
   img: { width: 70, height: 70, borderRadius: 12 },
-  info: { flex: 1, gap: 2 },
+  info: { flex: 1, gap: 2, },
   name: { fontSize: 15, fontWeight: '700', color: '#111' },
   meta: { fontSize: 13, color: '#666' },
-  price: { fontSize: 16, fontWeight: '800', color: '#059669', marginTop: 2 },
-  trash: { padding: 4 },
+  trash: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 2,
+    backgroundColor: '#fee2e2',
+    padding: 8,
+    borderRadius: 999,
+  },
 
   qtyRow: {
     position: 'absolute',

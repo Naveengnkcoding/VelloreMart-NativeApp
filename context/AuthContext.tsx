@@ -37,6 +37,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(data);
   };
 
+  const upsertCustomer = async (payload: any) => {
+    return supabase.from('customers').upsert(payload);
+  };
+
+  const activateCustomer = async (userId: string) => {
+    return supabase
+      .from('customers')
+      .update({ deleted: null })
+      .eq('id', userId);
+  };
+
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
@@ -74,6 +85,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    const redirectTo = Linking.createURL('reset-password');
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+  };
+
+  const recoverSession = async (accessToken: string, refreshToken?: string) => {
+    const payload = {
+      access_token: accessToken,
+      refresh_token: refreshToken ?? '',
+    };
+
+    const { error } = await supabase.auth.setSession(payload);
+    if (error) throw error;
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
@@ -81,7 +108,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, signIn, signUp, signInWithGoogle, signOut }}
+      value={{
+        user,
+        profile,
+        loading,
+        signIn,
+        signUp,
+        signInWithGoogle,
+        signOut,
+        resetPassword,
+        recoverSession,
+        fetchProfile,
+        upsertCustomer,
+        activateCustomer,
+      }}
     >
       {children}
     </AuthContext.Provider>

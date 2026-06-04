@@ -17,9 +17,15 @@ import { supabase } from '../../lib/supabase';
 const { width } = Dimensions.get('window');
 const CATEGORIES = ['All', 'veg-fruits', 'greens', 'milk-dairy', 'meat'];
 
+// Responsive dimensions
+const isTablet = width >= 768;
+const isLargeTablet = width >= 1024;
+const columnCount = isLargeTablet ? 4 : isTablet ? 3 : 2;
+const cardWidth = (width - (columnCount + 1) * 12) / columnCount;
+
 export default function HomeScreen() {
   const { t, lang, toggleLang } = useLanguage();
-  const { addItem } = useCart();
+  const { items, addItem, removeItem, updateQuantity } = useCart();
   const [products, setProducts] = useState<any[]>([]);
   const [category, setCategory] = useState('All');
   const [search, setSearch] = useState('');
@@ -51,6 +57,25 @@ export default function HomeScreen() {
     if (c === 'greens') return t.greens;
     if (c === 'milk-dairy') return t.milkDairy;
     return t.meat;
+  };
+
+  const handleAddProduct = (product: any) => {
+    addItem(product);
+    // updateQuantity(product.id, +1);
+  };
+
+  const handleIncrement = (productId: string, product: any) => {
+    addItem(product);
+  };
+
+  const handleDecrement = (productId: string) => {
+    const existing = items.find((i: any) => i.product.id === productId);
+    if (!existing) return;
+    if (existing.quantity <= 1) {
+      removeItem(productId);
+    } else {
+      updateQuantity(productId, -1);
+    }
   };
 
   return (
@@ -126,22 +151,50 @@ export default function HomeScreen() {
         )}
 
         <View style={styles.grid}>
-          {filtered.map((product) => (
-            <View key={product.id} style={styles.card}>
-              <Image source={{ uri: product.image_url }} style={styles.cardImg} />
-              <View style={styles.cardBody}>
-                <Text style={styles.cardName} numberOfLines={1}>
-                  {lang === 'ta' ? product.name_ta : product.name_en}
-                </Text>
-                <Text style={styles.cardUnit}>{product.weight}</Text>
-                <Text style={styles.cardPrice}>₹{product.price}</Text>
-                <TouchableOpacity onPress={() => addItem(product)} style={styles.addBtn}>
-                  <Ionicons name="cart-outline" size={16} color="#fff" />
-                  <Text style={styles.addText}>{t.add}</Text>
-                </TouchableOpacity>
+          {filtered.map((product) => {
+            const cartItem = items.find((i: any) => i.product.id === product.id);
+            return (
+              <View key={product.id} style={[styles.card, { width: cardWidth }]}>
+                <View style={styles.imgContainer}>
+                  <Image source={{ uri: product.image_url }} style={styles.cardImg} />
+                  {cartItem?.quantity > 0 && (
+                    <View style={styles.quantityBadge}>
+                      <Text style={styles.quantityText}>{cartItem.quantity}</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.cardBody}>
+                  <Text style={styles.cardName} numberOfLines={1}>
+                    {lang === 'ta' ? product.name_ta : product.name_en}
+                  </Text>
+                  <Text style={styles.cardUnit}>{product.weight}</Text>
+                  <Text style={styles.cardPrice}>₹{product.price}</Text>
+                  {cartItem?.quantity > 0 ? (
+                    <View style={styles.quantitySelector}>
+                      <TouchableOpacity
+                        onPress={() => handleDecrement(product.id)}
+                        style={styles.qtyRoundBtn}
+                      >
+                        <Text style={styles.qtyRoundBtnText}>−</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.qtyNumber}>{cartItem.quantity}</Text>
+                      <TouchableOpacity
+                        onPress={() => handleIncrement(product.id, product)}
+                        style={styles.qtyRoundBtn}
+                      >
+                        <Text style={styles.qtyRoundBtnText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity onPress={() => handleAddProduct(product)} style={styles.addBtn}>
+                      <Ionicons name="cart-outline" size={16} color="#fff" />
+                      <Text style={styles.addText}>{t.add}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
       </ScrollView>
     </View>
@@ -152,8 +205,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
   header: {
     backgroundColor: '#008b1d',
-    paddingTop: 20,
-    paddingBottom: 12,
+    paddingTop: 50,
+    paddingBottom: 12,  
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -185,7 +238,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   heroSub: { color: '#a7f3d0', fontSize: 12, letterSpacing: 1, fontWeight: '600' },
-  heroTitle: { color: '#fff', fontSize: 24, fontWeight: '800' },
+  heroTitle: { color: '#fff', fontSize: isTablet ? 28 : 24, fontWeight: '800' },
   heroTag: { color: '#d1fae5', fontSize: 13, marginBottom: 12 },
   searchBox: {
     backgroundColor: '#fff',
@@ -217,7 +270,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     gap: 8,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#111' },
+  sectionTitle: { fontSize: isTablet ? 20 : 18, fontWeight: '700', color: '#111' },
   countBadge: {
     backgroundColor: '#d1fae5',
     borderRadius: 12,
@@ -245,9 +298,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 12,
     paddingBottom: 24,
+    justifyContent: 'center',
   },
   card: {
-    width: (width - 48) / 2,
     backgroundColor: '#fff',
     borderRadius: 16,
     overflow: 'hidden',
@@ -256,7 +309,32 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  cardImg: { width: '100%', height: 120, resizeMode: 'cover' },
+  imgContainer: {
+    position: 'relative',
+    width: '100%',
+    height: isTablet ? 180 : 120,
+  },
+  cardImg: { width: '100%', height: '100%', resizeMode: 'cover' },
+  quantityBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#008b1d',
+    borderRadius: 20,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  quantityText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
   cardBody: { padding: 12, gap: 2 },
   cardName: { fontSize: 15, fontWeight: '700', color: '#111' },
   cardUnit: { fontSize: 12, color: '#666' },
@@ -272,4 +350,37 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   addText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  quantitySelector: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    border: '1px solid #e5e7eb',
+    borderRadius: 10,
+  },
+  qtyRoundBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 20,
+    // backgroundColor: 'grey',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // shadowColor: '#008b1d',
+    // shadowOpacity: 0.3,
+    // shadowRadius: 4,
+    // elevation: 6,
+  },
+  qtyRoundBtnText: {
+    color: 'grey',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  qtyNumber: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'black',
+    minWidth: 30,
+    textAlign: 'center',
+  },
 });
