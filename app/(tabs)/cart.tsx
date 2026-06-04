@@ -185,5 +185,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 8,
   },
+  price: { fontSize: 15, fontWeight: '700', color: '#059669' },
   orderText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

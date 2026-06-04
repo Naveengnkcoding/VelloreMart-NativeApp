@@ -1,10 +1,10 @@
 import * as Linking from 'expo-linking';
-import { useSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { supabase } from '../lib/supabase';
-import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { supabase } from '../lib/supabase';
 
 function parseUrlParams(url: string) {
   try {
@@ -22,7 +22,7 @@ function parseUrlParams(url: string) {
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const params = useSearchParams();
+  const params = useLocalSearchParams();
   const { t } = useLanguage();
   const { recoverSession } = useAuth();
   const [status, setStatus] = useState<'loading' | 'ready' | 'invalid' | 'success'>('loading');

@@ -356,7 +356,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    border: '1px solid #e5e7eb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderStyle: 'solid',
     borderRadius: 10,
   },
   qtyRoundBtn: {

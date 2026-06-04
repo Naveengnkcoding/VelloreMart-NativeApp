@@ -256,7 +256,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#eef2ff' },
+  container: { flex: 1, backgroundColor: '#ffffff' },
   header: {
     backgroundColor: '#008b1d',
     paddingTop: 50,
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   },
   logoutText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
-  center: { flex: 1, alignItems: 'center', paddingTop: 60, paddingHorizontal: 24 },
+  center: { flex: 1, alignItems: 'center', paddingTop: 200, paddingHorizontal: 24 },
   avatar: {
     width: 80,
     height: 80,
