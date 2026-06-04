@@ -1,6 +1,6 @@
 import * as Linking from 'expo-linking';
 
-export const WHATSAPP_NUMBER = '919876543210'; // 🔴 Replace with your store number
+export const WHATSAPP_NUMBER = '919150960140'; // 🔴 Replace with your store number
 
 export function generateOrderId() {
   const now = new Date();
