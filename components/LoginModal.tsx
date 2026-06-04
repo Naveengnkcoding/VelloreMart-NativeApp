@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   },
   error: { color: '#ef4444', fontSize: 13, textAlign: 'center' },
   btn: {
-    backgroundColor: '#86efac',
+    backgroundColor: '#008b1d',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -124,6 +124,6 @@ const styles = StyleSheet.create({
   btnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   footer: { textAlign: 'center', color: '#6b7280', fontSize: 14, marginTop: 8 },
   footerCenter: { textAlign: 'center', marginTop: 8 },
-  link: { color: '#059669', fontWeight: '700' },
+  link: { color: '#008b1d', fontWeight: '700' },
   forgotLink: { color: '#059669', fontWeight: '700' },
 });
