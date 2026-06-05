@@ -72,7 +72,7 @@ export const T = {
     shoppingCart: 'ஷாப்பிங் கார்ட்',
     items: 'பொருட்கள்',
     totalAmount: 'மொத்த தொகை',
-    loginOrderWhatsApp: 'வாட்ஸ்அப்பில் ஆர்டர் செய்ய உள்நுழையவும்',
+    loginOrderWhatsApp: 'ஆர்டர் செய்ய உள்நுழையவும்',
     orderViaWhatsApp: 'வாட்ஸ்அப்பில் ஆர்டர் செய்யவும்',
     pleaseLogin: 'தொடர உள்நுழையவும்',
     cartHasItems: 'உங்கள் கார்ட்டில் பொருட்கள் உள்ளன. ஆர்டர் செய்ய பதிவு செய்யவும்.',
