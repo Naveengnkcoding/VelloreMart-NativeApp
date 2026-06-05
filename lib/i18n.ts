@@ -68,7 +68,7 @@ export const T = {
     milkDairy: 'பால் & பால் பொருட்கள்',
     sort: 'வரிசைப்படுத்து',
     clearAll: 'அனைத்தையும் அழி',
-    add: 'சேர்க்க',
+    add: 'சேர்',
     shoppingCart: 'ஷாப்பிங் கார்ட்',
     items: 'பொருட்கள்',
     totalAmount: 'மொத்த தொகை',
