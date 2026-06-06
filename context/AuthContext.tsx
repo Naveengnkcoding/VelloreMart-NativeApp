@@ -10,23 +10,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+
   useEffect(() => {
+    // 1. Check existing session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) fetchProfile(session.user.id);
       setLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) fetchProfile(session.user.id);
-        else setProfile(null);
-      }
-    );
+    // 2. Listen for auth changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) fetchProfile(session.user.id);
+      else setProfile(null);
+    });
 
     return () => listener.subscription.unsubscribe();
   }, []);
+
+
+    useEffect(() => {
+        if (user && !profile && !loading) {
+          const meta = user.user_metadata || {};
+          supabase
+            .from('customers')
+            .upsert({
+              id: user.id,
+              email: user.email,
+              name: meta.full_name || meta.name || '',
+              phone: meta.phone || '',
+              address: '',
+            })
+            .then(() => fetchProfile(user.id));
+        }
+      }, [user, profile, loading]);
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -68,21 +86,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithGoogle = async () => {
+ const signInWithGoogle = async () => {
     const redirectTo = Linking.createURL('auth/callback');
+    console.log('Google OAuth redirectTo:', redirectTo);
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo, skipBrowserRedirect: true },
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true, // We open the browser manually
+      },
     });
+
     if (error) throw error;
     if (!data?.url) throw new Error('Could not get OAuth URL');
 
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type === 'success') {
-      const url = new URL(result.url);
-      const code = url.searchParams.get('code');
-      if (code) await supabase.auth.exchangeCodeForSession(code);
-    }
+    // Open browser. Google will redirect back to myapp://auth/callback?code=...
+    await WebBrowser.openBrowserAsync(data.url);
   };
 
   const resetPassword = async (email: string) => {

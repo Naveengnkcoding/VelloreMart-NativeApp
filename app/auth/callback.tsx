@@ -1,50 +1,62 @@
+import { useURL } from 'expo-linking';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-
-// Required on Android — tells the in-app browser to hand control back to the app
-WebBrowser.maybeCompleteAuthSession();
+import { ActivityIndicator, Text, View } from 'react-native';
+import { supabase } from '../../lib/supabase';
 
 export default function AuthCallback() {
   const router = useRouter();
+  const url = useURL();
 
   useEffect(() => {
-    // On some Android devices openAuthSessionAsync doesn't close automatically.
-    // As a fallback, this screen also handles the redirect URL directly when
-    // the OS deep-links into the app.
-    //
-    // expo-router will mount this component with the full URL (including ?code=)
-    // available via expo-linking. We use supabase's built-in deep link handler
-    // which reads window.location / the current URL on native via the registered
-    // listener in AuthContext. So here we just wait a tick and navigate home.
-    //
-    // If you want belt-and-suspenders code exchange here too, uncomment below:
-    //
-    // import * as Linking from 'expo-linking';
-    // const url = await Linking.getInitialURL();
-    // if (url) {
-    //   const { searchParams } = new URL(url);
-    //   const code = searchParams.get('code');
-    //   if (code) await supabase.auth.exchangeCodeForSession(code);
-    // }
+    if (!url) return;
 
-    const timer = setTimeout(() => {
-      router.replace('/');
-    }, 500); // small delay so session state settles
+    const handleUrl = async (urlString: string) => {
+      console.log('Auth callback URL:', urlString);
+      const parsed = new URL(urlString);
 
-    return () => clearTimeout(timer);
-  }, []);
+      // -------- OAuth (Google / Email providers) --------
+      const code = parsed.searchParams.get('code');
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          console.error('OAuth exchange failed:', error.message);
+        } else {
+          console.log('OAuth success:', data.session?.user?.email);
+          await WebBrowser.dismissBrowser(); // Close browser modal
+          router.replace('/(tabs)');
+          return;
+        }
+      }
+
+      // -------- Magic Link / Email Confirmation --------
+      const token_hash = parsed.searchParams.get('token_hash');
+      const type = parsed.searchParams.get('type') as any; // signup, recovery, magiclink, etc.
+      if (token_hash && type) {
+        const { error } = await supabase.auth.verifyOtp({ token_hash, type });
+        if (error) {
+          console.error('Magic link verify failed:', error.message);
+        } else {
+          console.log('Magic link verified');
+          await WebBrowser.dismissBrowser();
+          router.replace('/(tabs)');
+          return;
+        }
+      }
+
+      // Fallback: if nothing matched, go home anyway
+      await WebBrowser.dismissBrowser();
+      router.replace('/(tabs)');
+    };
+
+    handleUrl(url);
+  }, [url]);
 
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color="#008b1d" />
-      <Text style={styles.text}>Signing you in…</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6', gap: 12 }}>
+      <ActivityIndicator color="#059669" size="large" />
+      <Text style={{ color: '#666', fontSize: 14 }}>Completing sign in...</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
-  text: { marginTop: 16, fontSize: 16, color: '#374151' },
-});
