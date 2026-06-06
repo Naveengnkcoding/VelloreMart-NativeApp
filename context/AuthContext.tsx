@@ -1,5 +1,4 @@
-import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
@@ -10,16 +9,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Configure Google Sign-In once on mount
+   useEffect(() => {
+    if (process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID) {
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        offlineAccess: false,      // true only if you need refresh tokens
+        forceCodeForRefreshToken: false,
+      });
+    }
+  }, []);
 
   useEffect(() => {
-    // 1. Check existing session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) fetchProfile(session.user.id);
       setLoading(false);
     });
 
-    // 2. Listen for auth changes
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) fetchProfile(session.user.id);
@@ -29,29 +36,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-
-    useEffect(() => {
-        if (user && !profile && !loading) {
-          const meta = user.user_metadata || {};
-          supabase
-            .from('customers')
-            .upsert({
-              id: user.id,
-              email: user.email,
-              name: meta.full_name || meta.name || '',
-              phone: meta.phone || '',
-              address: '',
-            })
-            .then(() => fetchProfile(user.id));
-        }
-      }, [user, profile, loading]);
+  useEffect(() => {
+    if (user && !profile && !loading) {
+      const meta = user.user_metadata || {};
+      supabase
+        .from('customers')
+        .upsert({
+          id: user.id,
+          email: user.email,
+          name: meta.full_name || meta.name || '',
+          phone: meta.phone || '',
+          address: '',
+        })
+        .then(() => fetchProfile(user.id));
+    }
+  }, [user, profile, loading]);
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from('customers')
       .select('*')
       .eq('id', userId)
-      .maybeSingle(); // safer if row missing
+      .maybeSingle();
     setProfile(data);
   };
 
@@ -76,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
     if (data.user) {
       await supabase.from('customers').insert({
-        id: data.user.id, // PK references auth.users(id)
+        id: data.user.id,
         email,
         name: extra.name,
         phone: extra.phone,
@@ -86,28 +92,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
- const signInWithGoogle = async () => {
-    const redirectTo = Linking.createURL('auth/callback');
-    console.log('Google OAuth redirectTo:', redirectTo);
+    // ─── NATIVE GOOGLE SIGN-IN (Android) ───
+  const signInWithGoogle = async () => {
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      
+      // v13+ API: returns { type: 'success', data: User } | { type: 'cancelled' }
+      const response = await GoogleSignin.signIn();
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-        skipBrowserRedirect: true, // We open the browser manually
-      },
-    });
+      if (response.type !== 'success') {
+        throw new Error('Google Sign-In was cancelled');
+      }
 
-    if (error) throw error;
-    if (!data?.url) throw new Error('Could not get OAuth URL');
+      const idToken = response.data.idToken;
+      if (!idToken) {
+        throw new Error('Google Sign-In failed: No ID token received.');
+      }
 
-    // Open browser. Google will redirect back to myapp://auth/callback?code=...
-    await WebBrowser.openBrowserAsync(data.url);
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: idToken,
+      });
+
+      if (error) throw error;
+
+      // Immediately create customer row so UI updates instantly
+      if (data.user) {
+        const meta = data.user.user_metadata || {};
+        // await upsertCustomer({
+        //   id: data.user.id,
+        //   email: data.user.email,
+        //   name: meta.full_name || meta.name || '',
+        //   phone: meta.phone || '',
+        //   address: '',
+        // });
+        await fetchProfile(data.user.id);
+      }
+    } catch (error: any) {
+      console.error('Native Google Sign-In Error:', error.message || error);
+      throw error;
+    }
   };
 
   const resetPassword = async (email: string) => {
-    const redirectTo = Linking.createURL('reset-password');
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://velloresanthai.shop/reset-password',
+    });
     if (error) throw error;
   };
 
@@ -116,12 +146,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       access_token: accessToken,
       refresh_token: refreshToken ?? '',
     };
-
     const { error } = await supabase.auth.setSession(payload);
     if (error) throw error;
   };
 
   const signOut = async () => {
+    try {
+      await GoogleSignin.signOut(); // Clear native Google account so next user can pick a different one
+    } catch {
+      // Ignore if user wasn't signed in with Google
+    }
     await supabase.auth.signOut();
     setProfile(null);
   };

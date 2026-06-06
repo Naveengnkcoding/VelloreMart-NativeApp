@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -11,10 +11,13 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'info' | 'error' | null>(null);
 
   const handleSendReset = async () => {
     if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email address');
+      setMessage('Please enter your email address');
+      setMessageType('error');
       return;
     }
 
@@ -22,9 +25,11 @@ export default function ForgotPasswordPage() {
     try {
       await resetPassword(email.trim());
       setSent(true);
-      Alert.alert('Success', t.passwordResetSuccess);
+      setMessage(t.passwordResetSuccess);
+      setMessageType('info');
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Unable to send reset link');
+      setMessage(error?.message || 'Unable to send reset link');
+      setMessageType('error');
     } finally {
       setLoading(false);
     }
@@ -49,7 +54,9 @@ export default function ForgotPasswordPage() {
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t.sendResetLink}</Text>}
         </TouchableOpacity>
 
-        {sent ? <Text style={styles.infoText}>{t.passwordResetSuccess}</Text> : null}
+        {message ? (
+          <Text style={messageType === 'error' ? styles.errorText : styles.infoText}>{message}</Text>
+        ) : null}
 
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backText}>Back to login</Text>
@@ -124,5 +131,10 @@ const styles = StyleSheet.create({
     color: '#059669',
     fontSize: 15,
     fontWeight: '700',
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 14,    marginBottom: 16,
+    textAlign: 'center',
   },
 });
